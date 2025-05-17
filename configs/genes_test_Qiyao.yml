@@ -1,0 +1,25 @@
+input_seqs: data/fastas/gfp_lib_Qiyao.fasta
+primers: data/primers.csv
+
+output_dir: output/gfp_genes
+
+enzyme: Esp3I
+upstream_bbsite: AATG
+downstream_bbsite: TTAG
+other_used_sites: null
+ligation_data: T4_18h_37C
+
+njunctions: 50
+nopt_steps: 1000
+nopt_runs: 5
+njobs: 1
+oligo_len: 230
+
+add_primers: false
+pad_oligos: false
+
+dev: false  # remove
+min_size: 40  # remove
+other_enzymes: null
+opt_seeds: null
+optimization: simulated_annealing

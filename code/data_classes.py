@@ -38,11 +38,13 @@ def define_enzyme(enzyme_type: Optional[EnzymeTypes] = None) -> Enzyme:
     if enzyme_type.value == 'BsaI':
         return Enzyme('BsaI','GGTCTC',str(Seq('GGTCTC').reverse_complement()),4,1)
     if enzyme_type.value == 'BbsI':
-        return Enzyme('BbsI','GAGGAC',str(Seq('GAGGAC').reverse_complement()),4,2)
-    if enzyme_type.value == 'BsmBI':
+        return Enzyme('BbsI','GAAGAC',str(Seq('GAAGAC').reverse_complement()),4,2) # corrected wrong BbsI site in the OG code
+    if enzyme_type.value == ('BsmBI' ):
         return Enzyme('BsmBI','CGTCTC',str(Seq('CGTCTC').reverse_complement()),4,1)
-    if enzyme_type.value == 'Esp3I':
-        return Enzyme('SapI','GCTCTTC',str(Seq('GCTCTTC').reverse_complement()),3,1)
+    if enzyme_type.value == ('Esp3I' ):
+        return Enzyme('Esp3I','CGTCTC',str(Seq('CGTCTC').reverse_complement()),4,1)
+    if enzyme_type.value == 'SapI':
+        return Enzyme('SapI','GCTCTTC',str(Seq('GCTCTTC').reverse_complement()),3,1) # corrected issue with Esp3I and SapI
 
     return None
 
@@ -72,7 +74,6 @@ class PrimerIterator:
         """Get list of primers that don't contain enzyme sequences
         used during cloning.
         """
-
         primers = []
         for _, row in df.iterrows():
             fwd_bad = dna_contains_seq(row.fwd_sequence, *[e.seq for e in enzymes])

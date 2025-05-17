@@ -114,7 +114,7 @@ class Library:
     ) -> list["Pool"]:
         """Optimize each pool in the library. Each pool is run for the number of nopt_runs
         with each run using a different random seed.
-        
+
         Args:
             nopt_steps: Number of steps to run the optimization.
             nopt_runs: Number of times to optimize each pool.
@@ -129,7 +129,7 @@ class Library:
         ngenes_per_pool = (njunctions - len([self.upstream_bbsite, self.downstream_bbsite]) - len(self.other_used_sites)) // (self.estimate_nfrags() - 1)
         npools = ceil(len(self.genes) / ngenes_per_pool)
 
-        print(f"Target number of genes per pool: {ngenes_per_pool} genes assembled in {npools} pools.")
+        print(f"Maximal possible target number of genes per pool: {ngenes_per_pool} genes assembled in {npools} pools.")
         print(f"Genes are broken into {self.estimate_nfrags()} fragments.")
 
         # if not enough primers for estimated pools, raise error
@@ -346,7 +346,7 @@ class Pool:
             change_idx: int = random.choice(range(len(self.genes)))
             unchanged_pool_sites: np.ndarray[str] = np.hstack([g.assigned_sites.ggsite.to_numpy() for i, g in enumerate(self.genes) if i != change_idx])
             candidates: pd.DataFrame = self.genes[change_idx].shuffle_site(pool_ggsites=unchanged_pool_sites, min_dist=40)
-            
+
             used_sites = np.hstack([
                 unchanged_pool_sites,
                 candidates.ggsite.to_numpy(),
@@ -543,15 +543,18 @@ class SAPool:
             while True:
                 change_idx: int = random.choice(range(len(self.genes)))
                 # pool sites from the genes
-                unchanged_pool_sites: np.ndarray[str] = np.hstack([g.assigned_sites.ggsite.to_numpy() for i, g in enumerate(self.genes) if i != change_idx])
+                if len(self.genes) > 1:
+                    unchanged_pool_sites: np.ndarray[str] = np.hstack([g.assigned_sites.ggsite.to_numpy() for i, g in enumerate(self.genes) if i != change_idx])
+                else:
+                    unchanged_pool_sites: np.ndarray[str] = np.hstack([g.assigned_sites.ggsite.to_numpy() for i, g in enumerate(self.genes) ])
                 # these are a new set of GG sites from change_idx gene - they have to actually be assigned to the gene
                 candidates: pd.DataFrame = self.genes[change_idx].shuffle_site(pool_ggsites=unchanged_pool_sites, min_dist=40)
 
                 # if shuffle sites fails, pick different gene to optimize
                 if candidates is not None:
                     break
-            
-            
+
+
             used_sites = np.hstack([
                 unchanged_pool_sites,
                 candidates.ggsite.to_numpy(),
@@ -578,7 +581,7 @@ class SAPool:
                 else:
                     self.genes[change_idx].assigned_sites = candidates
                     current_state = {i:g.assigned_sites for i,g in enumerate(self.genes)}
-                
+
                     # if new fidelity is better than the best fidelity, update best fidelity
                     if candidate_fidelity > opt_trajectory[-1][0]:
                         best_state = current_state
@@ -587,7 +590,7 @@ class SAPool:
                     else:
                         # don't update best, so use old version
                         opt_trajectory.append((opt_trajectory[-1][0], candidate_fidelity, candidate_fidelity, energy_diff, contender, thing_to_beat, temp))
-            
+
             # if change is rejected, do nothing except update trajectory with old fidelity
             else:
                 opt_trajectory.append([opt_trajectory[-1][0], opt_trajectory[-1][1], candidate_fidelity, energy_diff, contender, thing_to_beat, temp])
@@ -756,7 +759,7 @@ class Gene:
 
             try:
                 candidates = self.ggsite_options[self.ggsite_options.pos.between(permissible_pos[0], permissible_pos[-1])]
-                
+
                 # remove any used sites - make sure to remove the WC pair, too - makes selection more efficient
                 used_sites = np.hstack([
                     np.array([self.upstream_bbsite, self.downstream_bbsite]),
@@ -778,7 +781,7 @@ class Gene:
 
     def get_oligos(self, add_primers: bool = True, pad_oligo: bool = True):
         """Get oligos for gene.
-        
+
         Args:
             primers: indicate whether primers should be added to the oligo sequence.
                 Recommended for most cases unless you are adding primers yourself.
@@ -806,8 +809,10 @@ class Gene:
         bbsites = {'upstream_bbsite':self.upstream_bbsite, 'downstream_bbsite':self.downstream_bbsite}
         extra_sites = {f'extra_ggsite_{i}':s for i, s in enumerate(self.other_used_sites)}
         ggsites = ggsites = {f'ggsite_{i}':site for i, site in enumerate(self.assigned_sites.sort_values('pos', ascending=True).ggsite)}
-        primers = {'fwd_primer':self.fprimer.sequence, 'rev_primer':self.rprimer.sequence}
-
+        if add_primers:
+            primers = {'fwd_primer':self.fprimer.sequence, 'rev_primer':self.rprimer.sequence}
+        else:
+            primers = {'fwd_primer':'', 'rev_primer':''}
         return output | oligos | bbsites | ggsites | extra_sites | primers
 
     def __fragment_gene(self) -> list[str]:
@@ -835,7 +840,7 @@ class Gene:
 
     def __add_restriction_sites(self, oligo: str, pad_bp: str = 'A') -> str:
         """Regurn oligo with restriction sites placed on either side.
-        
+
         FIXME: right now this needs to be called after you add in all GG sites.
         """
         forward_site = self.enzyme.seq + pad_bp*self.enzyme.padding
