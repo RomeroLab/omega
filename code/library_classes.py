@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from data_classes import Enzyme, PrimerIterator
 from helpers import clean_dna, unique_orthogonal
-from predict_fidelity import predict_fidelity, predict_minimum, predict_minimum_site
+from predict_fidelity import predict_fidelity, predict_minimum, predict_minimum_site, geneset_fidelity
 
 from joblib import Parallel, delayed
 
@@ -649,7 +649,15 @@ class SAPool:
             gene_output = gene_output | {'pool_id':self.name, 'fidelity':self.optimized_fidelity, 'min_gene_fidelity':self.min_gene_fidelity, 'min_site_fidelity':self.min_site_fidelity}
             outputs.append(gene_output)
 
-        return pd.DataFrame.from_dict(outputs)
+        # add support for getting individual gene fidelities
+        outputs = pd.DataFrame.from_dict(outputs)
+        gg_cols = outputs.columns[outputs.columns.str.startswith('ggsite_')]
+        gene_ggsites = [row.loc[gg_cols].tolist() for _, row in outputs.iterrows()] + [[self.upstream_bbsite, self.downstream_bbsite] + self.other_used_sites]
+        print(gene_ggsites)
+        gene_fidelities = geneset_fidelity(gene_ggsites, self.ligation_data)
+        outputs['gene_fidelity'] = gene_fidelities[:-1]
+
+        return outputs
 
 
 
