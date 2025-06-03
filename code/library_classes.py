@@ -420,7 +420,7 @@ class Pool:
             [np.array([df.ggsite.to_numpy() for df in self.optimized_sites]).flatten()] + [self.upstream_bbsite, self.downstream_bbsite],
             self.ligation_data
         )
-        print('calling')
+
         outputs = []
         for gene in self.genes:
             gene_output = gene.package_gene(add_primers=add_primers, pad_oligo=pad_oligo)
@@ -653,7 +653,7 @@ class SAPool:
         outputs = pd.DataFrame.from_dict(outputs)
         gg_cols = outputs.columns[outputs.columns.str.startswith('ggsite_')]
         gene_ggsites = [row.loc[gg_cols].tolist() for _, row in outputs.iterrows()] + [[self.upstream_bbsite, self.downstream_bbsite] + self.other_used_sites]
-        print(gene_ggsites)
+
         gene_fidelities = geneset_fidelity(gene_ggsites, self.ligation_data)
         outputs['gene_fidelity'] = gene_fidelities[:-1]
 
