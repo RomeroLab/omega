@@ -20,7 +20,7 @@ class EnzymeTypes(Enum):
     BbsI = 'BbsI'
     BsmBI = 'BsmBI'
     Esp3I = 'Esp3I'
-    SapI = 'SapI'
+    # SapI = 'SapI'
 
 @dataclass
 class Enzyme:
@@ -38,10 +38,12 @@ def define_enzyme(enzyme_type: Optional[EnzymeTypes] = None) -> Enzyme:
     if enzyme_type.value == 'BsaI':
         return Enzyme('BsaI','GGTCTC',str(Seq('GGTCTC').reverse_complement()),4,1)
     if enzyme_type.value == 'BbsI':
-        return Enzyme('BbsI','GAGGAC',str(Seq('GAGGAC').reverse_complement()),4,2)
+        return Enzyme('BbsI','GAAGAC',str(Seq('GAAGAC').reverse_complement()),4,2)
     if enzyme_type.value == 'BsmBI':
         return Enzyme('BsmBI','CGTCTC',str(Seq('CGTCTC').reverse_complement()),4,1)
     if enzyme_type.value == 'Esp3I':
+        return Enzyme('Esp3I','CGTCTC',str(Seq('CGTCTC').reverse_complement()),4,1)
+    if enzyme_type.value == 'SapI':
         return Enzyme('SapI','GCTCTTC',str(Seq('GCTCTTC').reverse_complement()),3,1)
 
     return None
@@ -100,7 +102,7 @@ class LigationDataOpt(Enum):
     BbsI_cycling = 'BbsI_cycling'
     BsmBI_cycling = 'BsmBI_cycling'
     Esp3I_cycling = 'Esp3I_cycling'
-    SapI_cycling = 'SapI_cycling'
+    # SapI_cycling = 'SapI_cycling'
 
 
 @dataclass

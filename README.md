@@ -129,10 +129,10 @@ OMEGA is still being refined - some arguments were created during development th
 - `input_seqs`: an input fasta file with codon-optimized sequences. An example file is included in `data/fastas`.
 - `primers`: file containing forward and reverse primer sequences. Please see `data/test_primers.csv` for example file format. All primer sequences should be written in 5' to 3' direction. We highly recommend using the Subramanian et al. primers since these were designed to amplify DNA from complex backgrounds with high-fidelity.
 - `output_dir`: name of directory to write output files to. If the directory does not exist, OMEGA will make one.
-- `enzyme`: Type IIS restriction enzyme used to assemble library. Accepted options are [BsaI, BsmBI, BbsI, SapI].
+- `enzyme`: Type IIS restriction enzyme used to assemble library. Accepted options are [BsaI, BsmBI, BbsI].
 - `upstream_bbsite`: upstream vector ligation site. (ex. AATG)
 - `downstream_bbsite`: downstream vector ligation site. (ex. TTAG)
-- `ligation_data`: Ligation frequency data from Potapov et al. to use in fidelity calculation. All experiments in OMEGA paper used T4_18h_37C, which use T4 ligase and an 18 hour incubation at 37C. Accepted options are [T4_01h_25C, T4_18h_25C, T4_01h_37C, T4_18h_37C] from Potapov et al. and [BsaI_cycling, BbsI_cycling, BsmBI_cycling, Esp3I_cycling, SapI_cycling] from Pryor et al.
+- `ligation_data`: Ligation frequency data from Potapov et al. to use in fidelity calculation. All experiments in OMEGA paper used T4_18h_37C, which use T4 ligase and an 18 hour incubation at 37C. Accepted options are [T4_01h_25C, T4_18h_25C, T4_01h_37C, T4_18h_37C] from Potapov et al. and [BsaI_cycling, BbsI_cycling, BsmBI_cycling, Esp3I_cycling] from Pryor et al.
 - `njunctions`: number of Golden Gate sites used to assemble each subpool. This number includes backbone vector sites, so for example if you specify njunctions=50, 48 GG sites are used to design fragments.
 - `nopt_steps`: number of optimization steps used to design GG sites. The default is 3000.
 - `nopt_runs`: the number of times OMEGA will design GG sites for each subpool. Each run uses a separate random seed and the run with the best fidelity is taken as the solution. Increasing run number is recommended for improving fidelity more than `nopt_steps`.
