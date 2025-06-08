@@ -18,8 +18,12 @@ dev: false  # remove
 min_size: 40  # remove
 njobs: 1
 
+illegal_dna_sequences:
+  - 'ATA'
+  - 'GGGGG'
+
+
 oligo_len: 300
 opt_seeds: null
 optimization: simulated_annealing
-other_enzymes: null
 other_used_sites: null

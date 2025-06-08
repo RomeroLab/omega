@@ -28,7 +28,7 @@ def genes(
 
         # enzyme and ligation data arguments
         enzyme: Union[EnzymeTypes, Enzyme] = 'BsaI',
-        other_enzymes: Optional[EnzymeTypes] = None,
+        illegal_dna_sequences: Union[tuple, None] = None,
         ligation_data: LigationDataOpt = 'T4_18h_37C',
 
         # oligo packaging arguments
@@ -81,7 +81,7 @@ def genes(
 
     assembly_enzyme = define_enzyme(enzyme)
     #! Right now this only recognizes other TypeIIS enzymes
-    other_enzymes = [define_enzyme(e) for e in other_enzymes] if other_enzymes is not None else []
+    illegal_dna_sequences = illegal_dna_sequences or ("")
 
     # format input sequences into Gene objects
     input_seqs_recs = [(rec.id, str(rec.seq)) for rec in SeqIO.parse(input_seqs, 'fasta')]
@@ -105,9 +105,10 @@ def genes(
         upstream_bbsite=upstream_bbsite,
         downstream_bbsite=downstream_bbsite,
         other_used_sites=other_used_sites,
+        illegal_dna_sequences=illegal_dna_sequences,
         min_size=min_size
     )
-
+    
     # assign optimization seeds - use nopt_runs to get random_opt seeds
     random_seeds = None
     if nopt_runs is not None:

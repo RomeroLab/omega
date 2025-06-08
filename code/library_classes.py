@@ -31,7 +31,7 @@ def get_coding_space(oligo_len: int, fprimer: str, rprimer: str, enzyme: Enzyme)
 def optimize_pools(
     name: Any, genes: list[tuple[Any, str]], enzyme: Enzyme, upstream_bbsite: str,
     downstream_bbsite: str, other_used_sites: Union[list[str], None],
-    forward_primer: Union[str, None], reverse_primer: Union[str, None], oligo_len: int,
+    forward_primer: Union[str, None], reverse_primer: Union[str, None], illegal_dna_sequences: tuple[str], oligo_len: int,
     nfrags: int, ligation_data: np.ndarray, nopt_steps: int, random_seed: int, optimization: str
 ) -> tuple["Pool", float, int]:
     """Optimize a single subassembly pool. Called by Library."""
@@ -48,7 +48,8 @@ def optimize_pools(
             reverse_primer=reverse_primer,
             oligo_len=oligo_len,
             nfrags=nfrags,
-            ligation_data=ligation_data
+            ligation_data=ligation_data,
+            illegal_dna_sequences=illegal_dna_sequences
         )
 
     elif optimization == 'simulated_annealing':
@@ -63,7 +64,8 @@ def optimize_pools(
             reverse_primer=reverse_primer,
             oligo_len=oligo_len,
             nfrags=nfrags,
-            ligation_data=ligation_data
+            ligation_data=ligation_data,
+            illegal_dna_sequences=illegal_dna_sequences
         )
 
     else:
@@ -86,6 +88,7 @@ class Library:
         upstream_bbsite: str,
         downstream_bbsite: str,
         other_used_sites: Union[np.ndarray, None],
+        illegal_dna_sequences: tuple[str],
         min_size: int = 40
     ):
 
@@ -96,6 +99,7 @@ class Library:
         self.upstream_bbsite = upstream_bbsite
         self.downstream_bbsite = downstream_bbsite
         self.other_used_sites = other_used_sites or np.array([])
+        self.illegal_dna_sequences = illegal_dna_sequences
         self.min_size = min_size
         self.nfrags = self.estimate_nfrags()
 
@@ -148,20 +152,21 @@ class Library:
         print('Optimizing library...')
         for i, gene_pool, (pfor, prev) in tqdm(it, total=npools, ncols=100):
             opt_results = Parallel(n_jobs=njobs)(delayed(optimize_pools)(
-                i,
-                gene_pool,
-                self.enzyme,
-                self.upstream_bbsite,
-                self.downstream_bbsite,
-                self.other_used_sites,
-                pfor,
-                prev,
-                self.oligo_len,
-                self.nfrags,
-                ligation_data,
-                nopt_steps,
-                rand_seed,
-                optimization
+                name=i,
+                genes=gene_pool,
+                enzyme=self.enzyme,
+                upstream_bbsite=self.upstream_bbsite,
+                downstream_bbsite=self.downstream_bbsite,
+                other_used_sites=self.other_used_sites,
+                forward_primer=pfor,
+                reverse_primer=prev,
+                illegal_dna_sequences=self.illegal_dna_sequences,
+                oligo_len=self.oligo_len,
+                nfrags=self.nfrags,
+                ligation_data=ligation_data,
+                nopt_steps=nopt_steps,
+                random_seed=rand_seed,
+                optimization=optimization
             ) for rand_seed in opt_seeds)
 
             opt_results.sort(key=lambda x: x[1])
@@ -251,6 +256,7 @@ class Pool:
         other_used_sites: Union[list[str], None],
         forward_primer: Union[str, None],
         reverse_primer: Union[str, None],
+        illegal_dna_sequences: tuple[str],
         oligo_len,
         nfrags,
         ligation_data
@@ -265,6 +271,7 @@ class Pool:
         self.oligo_len = oligo_len
         self.nfrags = nfrags
         self.ligation_data = ligation_data
+        self.illegal_dna_sequences = illegal_dna_sequences
 
         self.genes = self.__instantiate_genes(genes)
         self.__assign_start_sites()
@@ -288,6 +295,7 @@ class Pool:
                 self.fprimer,
                 self.rprimer,
                 self.oligo_len,
+                self.illegal_dna_sequences
             ) for i,g in genes
         ]
 
@@ -443,6 +451,7 @@ class SAPool:
         other_used_sites: Union[list[str], None],
         forward_primer: Union[str, None],
         reverse_primer: Union[str, None],
+        illegal_dna_sequences: tuple[str],
         oligo_len,
         nfrags,
         ligation_data
@@ -457,6 +466,7 @@ class SAPool:
         self.oligo_len = oligo_len
         self.nfrags = nfrags
         self.ligation_data = ligation_data
+        self.illegal_dna_sequences = illegal_dna_sequences
 
         self.genes = self.__instantiate_genes(genes)
         self.__assign_start_sites()
@@ -482,6 +492,7 @@ class SAPool:
                 self.fprimer,
                 self.rprimer,
                 self.oligo_len,
+                self.illegal_dna_sequences
             ) for i,g in genes
         ]
 
@@ -674,7 +685,8 @@ class Gene:
         enzyme: Enzyme,
         forward_primer: str,
         reverse_primer: str,
-        oligo_len: int
+        oligo_len: int,
+        illegal_dna_sequences: tuple[str]
     ):
         self.name = name
         self.seq = sequence.upper()
@@ -683,6 +695,7 @@ class Gene:
         self.downstream_bbsite = downstream_bbsite
         self.other_used_sites = other_used_sites or []
         self.oligo_len = oligo_len
+        self.illegal_dna_sequences = illegal_dna_sequences
 
         self.fprimer = forward_primer
         self.rprimer = reverse_primer
@@ -860,9 +873,10 @@ class Gene:
 
         if pad_oligo:
             return "".join([self.fprimer.sequence,
-                            clean_dna(left.size, self.enzyme.seq).lower(),
+                            # * star is to unpack dna
+                            clean_dna(left.size, self.enzyme.seq, *self.illegal_dna_sequences).lower(),
                             oligo,
-                            clean_dna(right.size, self.enzyme.seq).lower(),
+                            clean_dna(right.size, self.enzyme.seq, *self.illegal_dna_sequences).lower(),
                             str(Seq(self.rprimer.sequence).reverse_complement())])
 
         else:

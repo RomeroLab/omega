@@ -10,16 +10,18 @@ other_used_sites: null
 ligation_data: T4_18h_37C
 
 njunctions: 50
-nopt_steps: 1000
+nopt_steps: 100
 nopt_runs: 5
 njobs: 1
 oligo_len: 300
 
 add_primers: true
 pad_oligos: true
+illegal_dna_sequences:
+  - 'ATA'
+  - 'GGGGG'
 
 dev: false  # remove
 min_size: 40  # remove
-other_enzymes: null
 opt_seeds: null
 optimization: simulated_annealing

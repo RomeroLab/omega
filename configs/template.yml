@@ -18,9 +18,9 @@ oligo_len: 300
 
 add_primers: true
 pad_oligos: true
+illegal_dna_sequences: None
 
 dev: false  # remove
 min_size: 40
-other_enzymes: null
 opt_seeds: null
 optimization: simulated_annealing
