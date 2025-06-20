@@ -129,12 +129,12 @@ def genes(
         optimization=optimization
     )
 
-    optimized_library = library.package_library(add_primers=add_primers, pad_oligo=pad_oligos)
-    optimized_library.to_csv(os.path.join(output_dir, 'optimization_results.csv'))
+    optimized_library = library.package_library()
+    optimized_library.set_index('gene_id').to_csv(os.path.join(output_dir, 'optimization_results.csv'))
     print(f"Finished optimization. Saved to {os.path.join(output_dir, 'optimization_results.csv')}")
 
     oligopool = library.package_oligos(add_primers=add_primers, pad_oligo=pad_oligos)
-    oligopool.to_csv(os.path.join(output_dir, 'oligo_order.csv'))
+    oligopool.set_index('name').to_csv(os.path.join(output_dir, 'oligo_order.csv'))
     print(f"Designed {len(oligopool)} oligos. Saved to {os.path.join(output_dir, 'oligo_order.csv')}")
 
     pool_stats = pd.DataFrame.from_dict(
@@ -153,7 +153,7 @@ def genes(
             'prev_sequence':p.rprimer.sequence
         } for p, fidelity, seed in library.optimized_pools]
     )
-    pool_stats.to_csv(join(output_dir, 'pool_stats.csv'))
+    pool_stats.set_index('pool').to_csv(join(output_dir, 'pool_stats.csv'))
     print(f"Pool-level statistics saved to {join(output_dir, 'pool_stats.csv')}")
 
     with open(join(output_dir, 'experiment_details.txt'), 'w') as f:

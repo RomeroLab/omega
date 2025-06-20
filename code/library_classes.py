@@ -213,12 +213,12 @@ class Library:
         return None
 
 
-    def package_library(self, add_primers: bool = True, pad_oligo: bool = True) -> pd.DataFrame:
+    def package_library(self) -> pd.DataFrame:
         """Get optimization output for all pools in library."""
         #pylint:disable=line-too-long
 
         output = pd.concat(
-            [p[0].package_pool(add_primers=add_primers, pad_oligo=pad_oligo) for p in self.optimized_pools],
+            [p[0].package_pool() for p in self.optimized_pools],
             ignore_index=True
         )
 
@@ -651,12 +651,12 @@ class SAPool:
 
         return pd.DataFrame.from_dict(oligos)
 
-    def package_pool(self, add_primers: bool = True, pad_oligo: bool = True) -> pd.DataFrame:
+    def package_pool(self) -> pd.DataFrame:
         """Return optimization output for pool."""
 
         outputs = []
         for gene in self.genes:
-            gene_output = gene.package_gene(add_primers=add_primers, pad_oligo=pad_oligo)
+            gene_output = gene.package_gene()
             gene_output = gene_output | {'pool_id':self.name, 'fidelity':self.optimized_fidelity, 'min_gene_fidelity':self.min_gene_fidelity, 'min_site_fidelity':self.min_site_fidelity}
             outputs.append(gene_output)
 
@@ -822,17 +822,26 @@ class Gene:
 
         return frag_gene
 
-    def package_gene(self, add_primers: bool = True, pad_oligo: bool = True):
+    def package_gene(self):
         """Package gene optmization results."""
 
         output = {'gene_id':self.name, 'sequence':self.seq}
-        oligos = {f'oligo_{i}':oligo for i, oligo in enumerate(self.get_oligos(add_primers, pad_oligo))}
+        oligos = {f'oligo_{i}':oligo for i, oligo in enumerate(self.fragment_gene())}
         bbsites = {'upstream_bbsite':self.upstream_bbsite, 'downstream_bbsite':self.downstream_bbsite}
         extra_sites = {f'extra_ggsite_{i}':s for i, s in enumerate(self.other_used_sites)}
         ggsites = ggsites = {f'ggsite_{i}':site for i, site in enumerate(self.assigned_sites.sort_values('pos', ascending=True).ggsite)}
         primers = {'fwd_primer':self.fprimer.sequence, 'rev_primer':self.rprimer.sequence}
 
         return output | oligos | bbsites | ggsites | extra_sites | primers
+
+    def fragment_gene(self) -> list[str]:
+        """Fragment gene at GG site junctions. Each fragment includes GG sites."""
+
+        if self.gene_assembles():
+            return self.__fragment_gene()
+        else:
+            return None
+
 
     def __fragment_gene(self) -> list[str]:
         """Break gene into fragments based on optimized sites. Adds in GG sites
