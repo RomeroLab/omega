@@ -916,11 +916,9 @@ class Gene:
 
             if not any(contains_element):
                 candidate_seq = "".join([
-                    self.fprimer.sequence,
                     left_padding,
                     oligo,
                     right_padding,
-                    str(Seq(self.rprimer.sequence).reverse_complement())
                 ])
 
                 return candidate_seq
