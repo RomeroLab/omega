@@ -1,11 +1,10 @@
 """Random helper functions."""
 
-import re
 from itertools import chain
 from typing import Iterable, Any
-from random import shuffle, choice
-import random
+from random import shuffle
 
+import regex as re
 import numpy as np
 import pandas as pd
 
@@ -14,24 +13,41 @@ from Bio import SeqIO
 
 
 def unique_orthogonal(sites) -> bool:
+    """Checks if GG sites are orthogonal with the Watson Crick pairs."""
+
     wc_sites = [str(Seq(s).reverse_complement()) for s in sites]
 
     return len(set(sites.tolist() + wc_sites)) == len(sites)*2
 
-def dna_contains_seq(dna: str, *seq: str, reverse_complement: bool = True) -> bool:
+def dna_contains_seq(dna: str, *seq_elements: str, reverse_complement: bool = True) -> bool:
     """Checks if dna sequence contains defined sequences.
     True if sequence is present. If reverse_complement is True, then
     searches for reverse complement as well.
     """
 
     if reverse_complement:
-        pattern = "|".join(list(chain(*[[s, str(Seq(s).reverse_complement())] for s in seq])))
+        pattern = "|".join(
+            list(chain(*[[s, str(Seq(s).reverse_complement())] for s in seq_elements]))
+        )
     else:
-        pattern = "|".join(list(seq))
+        pattern = "|".join(list(seq_elements))
 
     match = re.search(pattern, dna, flags=re.I)
 
     return match is not None
+
+def count_sequence_element(dna: str, seq_element: str) -> int:
+    """Returns number of times a DNA element is found in a DNA
+    sequence. Considers all overlapping regions of DNA."""
+
+    matches = re.findall(
+        f'{seq_element}|{str(Seq(seq_element).reverse_complement())}',
+        dna,
+        flags=re.IGNORECASE,
+        overlapped=True
+    )
+
+    return len(matches)
 
 def dynamic_chunker(iterable: Iterable[Any], chunk_sizes: list[int]) -> Iterable[list[Any]]:
     """Break up list into variable-sized chunks specified in `chunk_sizes`"""
@@ -41,21 +57,10 @@ def dynamic_chunker(iterable: Iterable[Any], chunk_sizes: list[int]) -> Iterable
     for chunk in chunk_sizes:
         yield [next(it) for i in range(chunk)]
 
-def clean_dna(length: int, *seq: str):
+def random_dna(size: int) -> str:
+    """Generate random string of DNA with 40% GC content."""
 
-    dna = ""
-    while len(dna) < length:
-        candidate = dna + random.choice(list('ATGC'))
-        if not dna_contains_seq(candidate, *seq, reverse_complement=True):
-            dna = candidate
-        else:
-            continue
-
-    return dna
-
-def random_dna(length: int):
-
-    return "".join([choice('ATGC') for _ in range(length)])
+    return "".join(np.random.choice(list('ATCG'), size=size, p=[.3,.3,.2,.2]).tolist())
 
 def flatten(iterable: list) -> list:
     """Remove one level of a nested list."""

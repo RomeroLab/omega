@@ -13,7 +13,7 @@ from Bio.Seq import Seq
 from tqdm import tqdm
 
 from data_classes import Enzyme, PrimerIterator
-from helpers import clean_dna, unique_orthogonal
+from helpers import unique_orthogonal, random_dna, dna_contains_seq
 from predict_fidelity import predict_fidelity, predict_minimum, predict_minimum_site, geneset_fidelity
 
 from joblib import Parallel, delayed
@@ -814,8 +814,11 @@ class Gene:
             frag_gene = self.__fragment_gene()
             frag_gene = [self.__add_restriction_sites(f) for f in frag_gene]
 
+        if pad_oligo:
+            frag_gene = [self.__add_padding(f) for f in frag_gene]
+
         if add_primers:
-            frag_gene = [self.__add_primers(f, pad_oligo) for f in frag_gene]
+            frag_gene = [self.__add_primers(f) for f in frag_gene]
 
         return frag_gene
 
@@ -863,26 +866,73 @@ class Gene:
         reverse_site = pad_bp*self.enzyme.padding + self.enzyme.revc_seq
 
         return forward_site + oligo + reverse_site
-
-    def __add_primers(self, oligo: str, pad_oligo: bool = True) -> str:
-        """Return oligo with forward and reverse primers attached."""
+    
+    def __add_padding(self, oligo: str) -> str:
+        """Add random DNA padding to oligo."""
         #pylint: disable=unbalanced-tuple-unpacking
 
         extra_space = self.oligo_len - len(self.fprimer.sequence) - len(self.rprimer.sequence) - len(oligo)
-        left, right = np.array_split(np.arange(extra_space), [extra_space//2])
+        left, right = np.array_split(np.arange(extra_space), 2)
 
-        if pad_oligo:
-            return "".join([self.fprimer.sequence,
-                            # * star is to unpack dna
-                            clean_dna(left.size, self.enzyme.seq, *self.illegal_dna_sequences).lower(),
-                            oligo,
-                            clean_dna(right.size, self.enzyme.seq, *self.illegal_dna_sequences).lower(),
-                            str(Seq(self.rprimer.sequence).reverse_complement())])
+        while True:
 
-        else:
-            return "".join([self.fprimer.sequence,
-                            oligo,
-                            str(Seq(self.rprimer.sequence).reverse_complement())])
+            left_padding = random_dna(left.size).lower()
+            right_padding = random_dna(right.size).lower()
+
+
+            # ensure that the generated DNA does not contain any
+            # disallowed sequences. Also make sure that these
+            # sequences do not form when the padding meets the oligo
+            # or primer.
+            contains_element = []
+            for illegal_element in ([self.enzyme.seq] +
+                                    [*self.illegal_dna_sequences]):
+
+                # overlap is 1 less than element length, otherwise
+                # will match some elements (like enzyme) that are
+                # supposed to be in oligo sequence.
+                overlap = len(illegal_element) - 1
+
+                #check left/upstream padding
+                contains_element.append(
+                    dna_contains_seq(
+                        (self.fprimer.sequence[-overlap:] +
+                            left_padding +
+                            oligo[:overlap]),
+                        illegal_element
+                    )
+                )
+
+                # check right/downstream padding
+                contains_element.append(
+                    dna_contains_seq(
+                        (oligo[-overlap:] +
+                            right_padding +
+                            self.rprimer.sequence[:overlap]),
+                        illegal_element
+                    )
+                )
+
+
+            if not any(contains_element):
+                candidate_seq = "".join([
+                    self.fprimer.sequence,
+                    left_padding,
+                    oligo,
+                    right_padding,
+                    str(Seq(self.rprimer.sequence).reverse_complement())
+                ])
+
+                return candidate_seq
+
+    def __add_primers(self, oligo: str) -> str:
+        """Return oligo with forward and reverse primers attached."""
+
+        return "".join([
+            self.fprimer.sequence,
+            oligo,
+            str(Seq(self.rprimer.sequence).reverse_complement())
+        ])
 
 
     def gene_assembles(self) -> bool:
